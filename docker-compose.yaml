@@ -1,0 +1,81 @@
+version: '3'
+
+services:
+  api:
+    environment:
+      - DATABASE_URL=postgresql://cb_test:cb_test@sql:5432/cb_test?sslmode=disable
+      - REDIS_URL=redis:6379
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "9000:9000"
+    depends_on:
+      sql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      sql_migrations:
+        condition: service_completed_successfully
+  sql_migrations:
+    image: migrate/migrate:v4.18.3      
+    volumes:
+      - ./migrations:/migrations       
+    depends_on:
+      sql:
+        condition: service_healthy     
+    
+    command: [
+      "-verbose",
+      "-path=/migrations/",
+      "-database=postgres://cb_test:cb_test@sql:5432/cb_test?sslmode=disable",
+      "up"
+    ]
+    restart: "no"  
+  # sql_migrations:
+  #   build:
+  #     context: .
+  #     dockerfile: deploy/db/Dockerfile
+  #   command: ["sh", "-c", "migrate -path /migrations -database $DATABASE_URL up"]
+  #   depends_on:
+  #     sql:
+  #       condition: service_healthy
+  sql:
+    image: postgres:18beta3
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=cb_test
+      - POSTGRES_PASSWORD=cb_test
+      - POSTGRES_DB=cb_test
+      # - PGDATA=/var/lib/postgresql/data
+    # volumes:
+    #   - './data:/var/lib/postgresql/data'
+    #   - './testdata:/testdata'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+   
+  redis:
+    image: redis/redis-stack:7.4.0-v3
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+
+
+# services:
+#   postgres:
+#     container_name: cb-postgres
+#     image: postgres:13.1-alpine
+#     environment:
+#       - POSTGRES_USER=cb_test
+#       - POSTGRES_PASSWORD=cb_test
+#       - POSTGRES_DB=cb_test
+#       - PGDATA=/var/lib/postgresql/data
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - './data:/var/lib/postgresql/data'
+#       - './testdata:/testdata'

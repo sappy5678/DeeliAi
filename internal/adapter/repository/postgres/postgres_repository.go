@@ -7,6 +7,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jmoiron/sqlx"
+	"github.com/rs/zerolog"
 
 	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
 )
@@ -57,4 +58,10 @@ func (r *PostgresRepository) finishTx(err common.Error, tx *sqlx.Tx) common.Erro
 
 		return nil
 	}
+}
+
+// logger wrap the execution context with component info
+func (r *PostgresRepository) logger(ctx context.Context) *zerolog.Logger {
+	l := zerolog.Ctx(ctx).With().Str("component", "postgres-repository").Logger()
+	return &l
 }

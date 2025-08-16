@@ -6,13 +6,16 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/barter"
 	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
 )
 
-const KeyAuth = "Authorization"
-const KeyTrader = "Trader"
+const (
+	KeyAuth   = "Authorization"
+	KeyTrader = "Trader"
+)
 
 func GetAuthorizationToken(c *gin.Context) (string, common.Error) {
 	token := c.GetHeader(KeyAuth)
@@ -87,4 +90,20 @@ func GetQueryBool(c *gin.Context, key string) (bool, common.Error) {
 		return false, common.NewError(common.ErrorCodeParameterInvalid, errors.New(msg), common.WithMsg(msg))
 	}
 	return b, nil
+}
+
+// GetParamUUID gets a key's value from Gin's URL param and transform it to uuid.UUID.
+func GetParamUUID(c *gin.Context, key string) (uuid.UUID, common.Error) {
+	s := c.Param(key)
+	if s == "" {
+		msg := fmt.Sprintf("no %s", key)
+		return uuid.Nil, common.NewError(common.ErrorCodeParameterInvalid, errors.New(msg), common.WithMsg(msg))
+	}
+
+	id, err := uuid.Parse(s)
+	if err != nil {
+		msg := fmt.Sprintf("invalid %s", key)
+		return uuid.Nil, common.NewError(common.ErrorCodeParameterInvalid, err, common.WithMsg(msg))
+	}
+	return id, nil
 }

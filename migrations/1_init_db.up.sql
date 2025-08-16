@@ -19,7 +19,7 @@ CREATE TABLE articles (
     title TEXT,
     description TEXT,
     image_url TEXT,
-    metadata JSONB,
+    metadata JSONB DEFAULT '{}'::jsonb NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -32,16 +32,15 @@ CREATE TABLE user_articles (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
-    score SMALLINT CHECK (score >= 1 AND score <= 5),
+    rate SMALLINT DEFAULT 0, -- 0: not rated, 1-5: rate 
     collected_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE,
     UNIQUE (user_id, article_id)
 );
 
 -- Index for user_articles
 -- CREATE INDEX idx_user_articles_user_id ON user_articles (user_id);
 CREATE INDEX idx_user_articles_article_id ON user_articles (article_id);
-CREATE INDEX idx_user_articles_user_article_deleted_at ON user_articles (user_id, article_id, deleted_at);
+CREATE INDEX idx_user_articles_user_article ON user_articles (user_id, article_id);
 
 
 -- Table: metadata_fetch_retries

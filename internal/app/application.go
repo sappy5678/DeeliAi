@@ -11,14 +11,16 @@ import (
 
 	"github.com/chatbotgang/go-clean-architecture-template/internal/adapter/repository/postgres"
 	"github.com/chatbotgang/go-clean-architecture-template/internal/adapter/server"
+	"github.com/chatbotgang/go-clean-architecture-template/internal/app/service/article"
 	"github.com/chatbotgang/go-clean-architecture-template/internal/app/service/auth"
 	"github.com/chatbotgang/go-clean-architecture-template/internal/app/service/barter"
 )
 
 type Application struct {
-	Params        ApplicationParams
-	AuthService   *auth.AuthService
-	BarterService *barter.BarterService
+	Params         ApplicationParams
+	AuthService    *auth.AuthService
+	BarterService  *barter.BarterService
+	ArticleService article.ArticleService
 }
 
 type ApplicationParams struct {
@@ -66,6 +68,7 @@ func NewApplication(ctx context.Context, wg *sync.WaitGroup, params ApplicationP
 		BarterService: barter.NewBarterService(ctx, barter.BarterServiceParam{
 			GoodRepo: pgRepo,
 		}),
+		ArticleService: article.NewArticleService(pgRepo),
 	}
 
 	return app, nil

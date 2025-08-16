@@ -37,4 +37,15 @@ func registerAPIHandlers(router *gin.Engine, app *app.Application) {
 		barterGroup.DELETE("/goods/:good_id", RemoveMyGood(app))
 		barterGroup.POST("/goods/exchange", ExchangeGoods(app))
 	}
+
+	// Add articles namespace
+	articleGroup := v1.Group("/articles", TmpAuthMiddleware())
+	{
+		articleGroup.POST("", CreateArticle(app))
+		articleGroup.GET("", ListArticles(app))
+		articleGroup.DELETE("/:article_id", DeleteArticle(app))
+		articleGroup.PUT("/:article_id/rate", RateArticle(app))
+		articleGroup.GET("/:article_id/rate", GetArticleRating(app))
+		articleGroup.DELETE("/:article_id/rate", DeleteArticleRating(app))
+	}
 }

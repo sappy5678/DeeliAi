@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app/service/barter"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
+	"github.com/sappy5678/DeeliAi/internal/app"
+	"github.com/sappy5678/DeeliAi/internal/app/service/barter"
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 func ExchangeGoods(app *app.Application) gin.HandlerFunc {

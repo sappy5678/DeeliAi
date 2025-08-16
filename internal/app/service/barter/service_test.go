@@ -7,7 +7,7 @@ import (
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app/service/barter/automock"
+	"github.com/sappy5678/DeeliAi/internal/app/service/barter/automock"
 )
 
 type serviceMock struct {
@@ -19,6 +19,7 @@ func buildServiceMock(ctrl *gomock.Controller) serviceMock {
 		GoodRepo: automock.NewMockGoodRepository(ctrl),
 	}
 }
+
 func buildService(mock serviceMock) *BarterService {
 	param := BarterServiceParam{
 		GoodRepo: mock.GoodRepo,

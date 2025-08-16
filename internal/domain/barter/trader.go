@@ -6,7 +6,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 type Trader struct {
@@ -54,7 +54,6 @@ func ParseTraderFromToken(signedToken string, signingKey []byte) (*Trader, commo
 	token, err := jwt.ParseWithClaims(signedToken, &traderClaim{}, func(token *jwt.Token) (interface{}, error) {
 		return signingKey, nil
 	})
-
 	if err != nil {
 		if e, ok := err.(*jwt.ValidationError); ok && e.Errors == jwt.ValidationErrorExpired {
 			msg := "token is expired"

@@ -3,8 +3,8 @@ package barter
 import (
 	"context"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/barter"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
+	"github.com/sappy5678/DeeliAi/internal/domain/barter"
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 //go:generate mockgen -destination automock/good_repository.go -package=automock . GoodRepository

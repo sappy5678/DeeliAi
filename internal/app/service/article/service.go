@@ -3,9 +3,10 @@ package article
 import (
 	"context"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/article"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
 	"github.com/google/uuid"
+
+	"github.com/sappy5678/DeeliAi/internal/domain/article"
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 type articleService struct {

@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/article"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
+	"github.com/sappy5678/DeeliAi/internal/domain/article"
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 // --- article table ---

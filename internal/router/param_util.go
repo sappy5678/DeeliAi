@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/barter"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
+	"github.com/sappy5678/DeeliAi/internal/domain/barter"
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 const (
@@ -42,6 +42,20 @@ func GetCurrentTrader(c *gin.Context) (*barter.Trader, common.Error) {
 func SetTrader(c *gin.Context, trader barter.Trader) common.Error {
 	c.Set(KeyTrader, trader)
 	return nil
+}
+
+// GetUserIDFromContext retrieves the user ID from the Gin context.
+func GetUserIDFromContext(c *gin.Context) (uuid.UUID, common.Error) {
+	var userID uuid.UUID
+	val, ok := c.Get("user_id")
+	if !ok {
+		return uuid.Nil, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New("user ID not found in context"))
+	}
+	userID, ok = val.(uuid.UUID)
+	if !ok {
+		return uuid.Nil, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New("user ID in context is not of type uuid.UUID"))
+	}
+	return userID, nil
 }
 
 // GetParamInt gets a key's value from Gin's URL param and transform it to int.

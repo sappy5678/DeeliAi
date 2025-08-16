@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog"
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app"
+	"github.com/sappy5678/DeeliAi/internal/app"
 )
 
 var (
@@ -137,13 +137,13 @@ func main() {
 	runHTTPServer(rootCtx, &wg, *cfg.Port, app)
 
 	// Listen to SIGTERM/SIGINT to close
-	var gracefulStop = make(chan os.Signal, 1)
+	gracefulStop := make(chan os.Signal, 1)
 	signal.Notify(gracefulStop, syscall.SIGTERM, syscall.SIGINT)
 	<-gracefulStop
 	rootCtxCancelFunc()
 
 	// Wait for all services to close with a specific timeout
-	var waitUntilDone = make(chan struct{})
+	waitUntilDone := make(chan struct{})
 	go func() {
 		wg.Wait()
 		close(waitUntilDone)

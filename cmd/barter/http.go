@@ -10,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/router"
+	"github.com/sappy5678/DeeliAi/internal/app"
+	"github.com/sappy5678/DeeliAi/internal/router"
 )
 
 func runHTTPServer(rootCtx context.Context, wg *sync.WaitGroup, port int, app *app.Application) {

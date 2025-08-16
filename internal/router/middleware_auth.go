@@ -5,14 +5,19 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
+	"github.com/sappy5678/DeeliAi/internal/app"
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 type AuthMiddlewareBearer struct {
 	app *app.Application
 }
+
+const (
+	ContextKeyUserID = "userID"
+)
 
 func NewAuthMiddlewareBearer(app *app.Application) *AuthMiddlewareBearer {
 	return &AuthMiddlewareBearer{
@@ -38,17 +43,24 @@ func (m *AuthMiddlewareBearer) Required() gin.HandlerFunc {
 		}
 
 		// Validate token
-		trader, err := m.app.AuthService.ValidateTraderToken(ctx, tokens[1])
-		if err != nil {
-			respondWithError(c, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New(err.Error()), common.WithMsg(err.ClientMsg())))
+		// Assuming AuthService now has ValidateUserToken
+		userID, cerr := m.app.AuthService.ValidateUserToken(ctx, tokens[1])
+		if cerr != nil {
+			respondWithError(c, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New(cerr.Error()), common.WithMsg(cerr.ClientMsg())))
 			return
 		}
 
-		// Set trader to context
-		if err = SetTrader(c, *trader); err != nil {
-			respondWithError(c, err)
-			return
-		}
+		// Set user ID to context
+		c.Set(ContextKeyUserID, userID)
 		c.Next()
 	}
+}
+
+func GetCurrentUserID(c *gin.Context) (uuid.UUID, common.Error) {
+	userID, ok := c.Get(ContextKeyUserID)
+	if !ok {
+		return uuid.Nil, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New("user not found in context"))
+	}
+
+	return userID.(uuid.UUID), nil
 }

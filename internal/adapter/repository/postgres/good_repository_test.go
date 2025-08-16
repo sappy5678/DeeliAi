@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/barter"
-	"github.com/chatbotgang/go-clean-architecture-template/testdata"
+	"github.com/sappy5678/DeeliAi/internal/domain/barter"
+	"github.com/sappy5678/DeeliAi/testdata"
 )
 
 func assertGood(t *testing.T, expected *barter.Good, actual *barter.Good) {

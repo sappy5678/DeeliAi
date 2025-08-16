@@ -10,8 +10,8 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/pkg/errors"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/barter"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
+	"github.com/sappy5678/DeeliAi/internal/domain/barter"
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 type repoGood struct {

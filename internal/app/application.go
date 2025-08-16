@@ -9,18 +9,21 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/adapter/repository/postgres"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/adapter/server"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app/service/article"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app/service/auth"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app/service/barter"
+	"github.com/sappy5678/DeeliAi/internal/adapter/repository/postgres"
+
+	"github.com/sappy5678/DeeliAi/internal/app/service/article"
+	"github.com/sappy5678/DeeliAi/internal/app/service/barter"
+	"github.com/sappy5678/DeeliAi/internal/app/service/user"
 )
 
 type Application struct {
 	Params         ApplicationParams
-	AuthService    *auth.AuthService
+	AuthService    user.AuthService
 	BarterService  *barter.BarterService
 	ArticleService article.ArticleService
+	UserRepository postgres.UserRepository
+	TokenService   user.TokenService
+	UserService    user.Service
 }
 
 type ApplicationParams struct {
@@ -52,15 +55,16 @@ func NewApplication(ctx context.Context, wg *sync.WaitGroup, params ApplicationP
 	}
 	pgRepo := postgres.NewPostgresRepository(ctx, db)
 
-	// Create servers
-	authServer := server.NewAuthServer(ctx, server.AuthServerParam{})
+	// Initialize TokenService
+	tokenService := user.NewTokenService(params.TokenSigningKey, params.TokenExpiryDuration, params.TokenIssuer)
 
 	// Create application
 	app := &Application{
-		Params: params,
-		AuthService: auth.NewAuthService(ctx, auth.AuthServiceParam{
-			AuthServer:     authServer,
-			TraderRepo:     pgRepo,
+		Params:         params,
+		UserRepository: pgRepo,
+		TokenService:   tokenService,
+		AuthService: user.NewAuthService(ctx, user.AuthServiceParam{
+			UserRepo:       pgRepo,
 			SigningKey:     params.TokenSigningKey,
 			ExpiryDuration: params.TokenExpiryDuration,
 			Issuer:         params.TokenIssuer,
@@ -69,6 +73,7 @@ func NewApplication(ctx context.Context, wg *sync.WaitGroup, params ApplicationP
 			GoodRepo: pgRepo,
 		}),
 		ArticleService: article.NewArticleService(pgRepo),
+		UserService:    user.NewUserService(pgRepo, tokenService), // Initialize UserService
 	}
 
 	return app, nil

@@ -8,8 +8,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/barter"
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/common"
+	"github.com/sappy5678/DeeliAi/internal/domain/barter"
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 func TestBarterService_ExchangeGoods(t *testing.T) {

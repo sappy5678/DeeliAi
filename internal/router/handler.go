@@ -3,7 +3,9 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/app"
+	"github.com/sappy5678/DeeliAi/internal/adapter/repository/postgres" // Import postgres
+	"github.com/sappy5678/DeeliAi/internal/app"
+	"github.com/sappy5678/DeeliAi/internal/app/service/user" // Import user service
 )
 
 func RegisterHandlers(router *gin.Engine, app *app.Application) {
@@ -21,11 +23,18 @@ func registerAPIHandlers(router *gin.Engine, app *app.Application) {
 	// Add health-check
 	v1.GET("/health", handlerHealthCheck())
 
-	// Add auth namespace
-	authGroup := v1.Group("/auth")
+	// Initialize UserHandler
+	userHandler := NewUserHandler(user.NewUserService(
+		app.UserRepository.(postgres.UserRepository), // Explicitly cast
+		app.TokenService.(user.TokenService),
+	))
+
+	// Add user namespace
+	userGroup := v1.Group("/user")
 	{
-		authGroup.POST("/traders", RegisterTrader(app))
-		authGroup.POST("/traders/login", LoginTrader(app))
+		userGroup.POST("/signup", userHandler.SignUp)
+		userGroup.POST("/login", userHandler.Login)
+		userGroup.GET("/me", BearerToken.Required(), userHandler.GetCurrentUser)
 	}
 
 	// Add barter namespace
@@ -39,7 +48,7 @@ func registerAPIHandlers(router *gin.Engine, app *app.Application) {
 	}
 
 	// Add articles namespace
-	articleGroup := v1.Group("/articles", TmpAuthMiddleware())
+	articleGroup := v1.Group("/articles", BearerToken.Required()) // Use BearerToken.Required()
 	{
 		articleGroup.POST("", CreateArticle(app))
 		articleGroup.GET("", ListArticles(app))

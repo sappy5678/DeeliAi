@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chatbotgang/go-clean-architecture-template/internal/domain/article"
-	"github.com/chatbotgang/go-clean-architecture-template/testdata"
+	"github.com/sappy5678/DeeliAi/internal/domain/article"
+	"github.com/sappy5678/DeeliAi/testdata"
 )
 
 func assertArticle(t *testing.T, expected *article.Article, actual *article.Article) {

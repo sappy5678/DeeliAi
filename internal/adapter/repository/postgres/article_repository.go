@@ -78,21 +78,6 @@ func (c repoColumnPatternArticle) columns() string {
 	return strings.Join(col, ", ")
 }
 
-func (c repoColumnPatternArticle) materializedViewColumns() string {
-	col := []string{
-		c.ID,
-		c.URL,
-		c.Title,
-		c.Description,
-		c.ImageURL,
-		c.Metadata,
-	}
-	for i, v := range col {
-		col[i] = fmt.Sprintf("%s.%s", repoMaterializedViewArticleAverageRate, v)
-	}
-	return strings.Join(col, ", ")
-}
-
 // --- user_articles table ---
 
 type repoUserArticle struct {

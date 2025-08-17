@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,7 +14,7 @@ type TokenServiceImpl struct {
 	issuer         string
 }
 
-func NewTokenService(signingKey []byte, expiryDuration time.Duration, issuer string) TokenService {
+func NewTokenService(_ context.Context, signingKey []byte, expiryDuration time.Duration, issuer string) TokenService {
 	return &TokenServiceImpl{
 		signingKey:     signingKey,
 		expiryDuration: expiryDuration,

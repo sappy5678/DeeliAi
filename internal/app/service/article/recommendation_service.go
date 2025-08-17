@@ -12,11 +12,6 @@ import (
 	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
-// RecommendationService defines the interface for article recommendation operations.
-type RecommendationService interface {
-	GetRecommendations(ctx context.Context, userID uuid.UUID, limit int) (article.RecommendationArticles, common.Error)
-}
-
 // recommendationService implements RecommendationService.
 type recommendationService struct {
 	articleRepo ArticleRepository // Interface for articles table operations

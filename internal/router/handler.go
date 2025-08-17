@@ -3,9 +3,9 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/sappy5678/DeeliAi/internal/adapter/repository/postgres" // Import postgres
+	// Import postgres
 	"github.com/sappy5678/DeeliAi/internal/app"
-	"github.com/sappy5678/DeeliAi/internal/app/service/user" // Import user service
+	// Import user service
 )
 
 func RegisterHandlers(router *gin.Engine, app *app.Application) {
@@ -23,28 +23,12 @@ func registerAPIHandlers(router *gin.Engine, app *app.Application) {
 	// Add health-check
 	v1.GET("/health", handlerHealthCheck())
 
-	// Initialize UserHandler
-	userHandler := NewUserHandler(user.NewUserService(
-		app.UserRepository.(postgres.UserRepository), // Explicitly cast
-		app.TokenService.(user.TokenService),
-	))
-
 	// Add user namespace
 	userGroup := v1.Group("/user")
 	{
-		userGroup.POST("/signup", userHandler.SignUp)
-		userGroup.POST("/login", userHandler.Login)
-		userGroup.GET("/me", BearerToken.Required(), userHandler.GetCurrentUser)
-	}
-
-	// Add barter namespace
-	barterGroup := v1.Group("/barter", BearerToken.Required())
-	{
-		barterGroup.POST("/goods", PostGood(app))
-		barterGroup.GET("/goods", ListMyGoods(app))
-		barterGroup.GET("/goods/traders", ListOthersGoods(app))
-		barterGroup.DELETE("/goods/:good_id", RemoveMyGood(app))
-		barterGroup.POST("/goods/exchange", ExchangeGoods(app))
+		userGroup.POST("/signup", SignUp(app))
+		userGroup.POST("/login", Login(app))
+		userGroup.GET("/me", BearerToken.Required(), GetCurrentUser(app))
 	}
 
 	// Add articles namespace

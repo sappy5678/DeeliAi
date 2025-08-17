@@ -10,12 +10,12 @@ import (
 )
 
 type articleService struct {
-	articleRepo ArticleRepository
 	RecommendationService
+	articleRepo    ArticleRepository
 	metadataWorker *MetadataWorker
 }
 
-func NewArticleService(articleRepo ArticleRepository) ArticleService {
+func NewArticleService(ctx context.Context, articleRepo ArticleRepository) ArticleService {
 	service := &articleService{
 		articleRepo: articleRepo,
 	}

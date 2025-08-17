@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"github.com/sappy5678/DeeliAi/internal/domain/barter"
 	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
@@ -24,24 +23,6 @@ func GetAuthorizationToken(c *gin.Context) (string, common.Error) {
 		return "", common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New(msg), common.WithMsg(msg))
 	}
 	return token, nil
-}
-
-func GetCurrentTrader(c *gin.Context) (*barter.Trader, common.Error) {
-	data, ok := c.Get(KeyTrader)
-	if !ok {
-		return nil, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New("no credential"))
-	}
-
-	cred, ok := data.(barter.Trader)
-	if !ok {
-		return nil, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New("failed to assert credential"))
-	}
-	return &cred, nil
-}
-
-func SetTrader(c *gin.Context, trader barter.Trader) common.Error {
-	c.Set(KeyTrader, trader)
-	return nil
 }
 
 func GetCurrentUserID(c *gin.Context) (uuid.UUID, common.Error) {

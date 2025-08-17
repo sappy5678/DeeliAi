@@ -12,17 +12,12 @@ import (
 	"github.com/sappy5678/DeeliAi/internal/adapter/repository/postgres"
 
 	"github.com/sappy5678/DeeliAi/internal/app/service/article"
-	"github.com/sappy5678/DeeliAi/internal/app/service/barter"
 	"github.com/sappy5678/DeeliAi/internal/app/service/user"
 )
 
 type Application struct {
 	Params         ApplicationParams
-	AuthService    user.AuthService
-	BarterService  *barter.BarterService
 	ArticleService article.ArticleService
-	UserRepository postgres.UserRepository
-	TokenService   user.TokenService
 	UserService    user.Service
 }
 
@@ -56,24 +51,13 @@ func NewApplication(ctx context.Context, wg *sync.WaitGroup, params ApplicationP
 	pgRepo := postgres.NewPostgresRepository(ctx, db)
 
 	// Initialize TokenService
-	tokenService := user.NewTokenService(params.TokenSigningKey, params.TokenExpiryDuration, params.TokenIssuer)
-
+	tokenService := user.NewTokenService(ctx, params.TokenSigningKey, params.TokenExpiryDuration, params.TokenIssuer)
+	authService := user.NewAuthService(ctx, tokenService)
 	// Create application
 	app := &Application{
 		Params:         params,
-		UserRepository: pgRepo,
-		TokenService:   tokenService,
-		AuthService: user.NewAuthService(ctx, user.AuthServiceParam{
-			UserRepo:       pgRepo,
-			SigningKey:     params.TokenSigningKey,
-			ExpiryDuration: params.TokenExpiryDuration,
-			Issuer:         params.TokenIssuer,
-		}),
-		BarterService: barter.NewBarterService(ctx, barter.BarterServiceParam{
-			GoodRepo: pgRepo,
-		}),
-		ArticleService: article.NewArticleService(pgRepo),
-		UserService:    user.NewUserService(pgRepo, tokenService),
+		ArticleService: article.NewArticleService(ctx, pgRepo),
+		UserService:    user.NewUserService(ctx, pgRepo, authService),
 	}
 
 	return app, nil

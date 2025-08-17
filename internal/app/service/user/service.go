@@ -11,19 +11,25 @@ import (
 	"github.com/sappy5678/DeeliAi/internal/domain/user"
 )
 
-type UserServiceImpl struct {
+type userService struct {
+	AuthService
 	userRepo postgres.UserRepository
-	tokenSrv TokenService
 }
 
-func NewUserService(userRepo postgres.UserRepository, tokenSrv TokenService) Service {
-	return &UserServiceImpl{
-		userRepo: userRepo,
-		tokenSrv: tokenSrv,
+type UserServiceParam struct {
+	UserRepo postgres.UserRepository
+}
+
+// interface {
+
+func NewUserService(ctx context.Context, userRepo postgres.UserRepository, authService AuthService) Service {
+	return &userService{
+		userRepo:    userRepo,
+		AuthService: authService,
 	}
 }
 
-func (s *UserServiceImpl) SignUp(ctx context.Context, email string, username string, password string) (*user.User, string, common.Error) {
+func (s *userService) SignUp(ctx context.Context, email string, username string, password string) (*user.User, string, common.Error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, "", common.NewError(common.ErrorCodeInternalProcess, err)
@@ -40,7 +46,7 @@ func (s *UserServiceImpl) SignUp(ctx context.Context, email string, username str
 		return nil, "", cerr
 	}
 
-	token, err := s.tokenSrv.GenerateToken(createdUser.ID)
+	token, err := s.AuthService.GenerateToken(createdUser.ID)
 	if err != nil {
 		return nil, "", common.NewError(common.ErrorCodeInternalProcess, err)
 	}
@@ -48,7 +54,7 @@ func (s *UserServiceImpl) SignUp(ctx context.Context, email string, username str
 	return createdUser, token, nil
 }
 
-func (s *UserServiceImpl) Login(ctx context.Context, email string, password string) (*user.User, string, common.Error) {
+func (s *userService) Login(ctx context.Context, email string, password string) (*user.User, string, common.Error) {
 	foundUser, cerr := s.userRepo.GetUserByEmail(ctx, email)
 	if cerr != nil {
 		return nil, "", cerr
@@ -59,7 +65,7 @@ func (s *UserServiceImpl) Login(ctx context.Context, email string, password stri
 		return nil, "", common.NewError(common.ErrorCodeAuthNotAuthenticated, err, common.WithMsg("invalid password")) // Changed here
 	}
 
-	token, err := s.tokenSrv.GenerateToken(foundUser.ID)
+	token, err := s.AuthService.GenerateToken(foundUser.ID)
 	if err != nil {
 		return nil, "", common.NewError(common.ErrorCodeInternalProcess, err)
 	}
@@ -67,7 +73,7 @@ func (s *UserServiceImpl) Login(ctx context.Context, email string, password stri
 	return foundUser, token, nil
 }
 
-func (s *UserServiceImpl) GetUser(ctx context.Context, userID uuid.UUID) (*user.User, common.Error) {
+func (s *userService) GetUser(ctx context.Context, userID uuid.UUID) (*user.User, common.Error) {
 	foundUser, cerr := s.userRepo.GetUserByID(ctx, userID)
 	if cerr != nil {
 		return nil, cerr

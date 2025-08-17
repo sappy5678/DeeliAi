@@ -10,10 +10,10 @@ DATABASE_DSN="postgresql://cb_test:cb_test@sql:5432/cb_test?sslmode=disable"
 TEST_PACKAGES = ./internal/...
 
 build:
-	go build -ldflags '${EXTRA_LD_FLAGS}' -o bin/barter ./cmd/barter
+	go build -ldflags '${EXTRA_LD_FLAGS}' -o bin/app ./cmd/app
 
 run: build
-	./bin/barter \
+	./bin/app \
 	--database_dsn=$(DATABASE_DSN) 
 # 	| jq
 

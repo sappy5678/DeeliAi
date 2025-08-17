@@ -21,7 +21,7 @@ type MetadataWorker struct {
 	service   *articleService
 }
 
-func NewMetadataWorker(service *articleService) *MetadataWorker {
+func NewMetadataWorker(ctx context.Context, service *articleService) *MetadataWorker {
 	s, err := gocron.NewScheduler(gocron.WithLocation(time.UTC))
 	if err != nil {
 		return nil
@@ -32,7 +32,7 @@ func NewMetadataWorker(service *articleService) *MetadataWorker {
 	}
 	w.scheduler.NewJob(
 		gocron.DurationJob(1*time.Minute),
-		gocron.NewTask(w.runMetadataFetchJob, context.Background()),
+		gocron.NewTask(w.runMetadataFetchJob, ctx),
 		gocron.WithSingletonMode(gocron.LimitModeReschedule),
 		gocron.WithName("MetadataWorker"),
 	)
@@ -95,7 +95,7 @@ func (w *MetadataWorker) runMetadataFetchJob(ctx context.Context) {
 			w.fetchFail(ctx, retry, err)
 			continue
 		}
-				art.Title = info.Title
+		art.Title = info.Title
 		art.Description = info.Description
 		if len(info.Metadata["og:image"]) > 0 {
 			art.ImageURL = info.Metadata["og:image"][0]

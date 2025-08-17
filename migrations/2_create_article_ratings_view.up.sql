@@ -15,3 +15,6 @@ GROUP BY
 -- Create index for better query performance
 CREATE UNIQUE INDEX idx_materialized_articles_average_rate_article_id 
 ON materialized_articles_average_rate (article_id);
+
+CREATE INDEX mav_avg_desc ON materialized_articles_average_rate (average_rating DESC);
+

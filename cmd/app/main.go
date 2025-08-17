@@ -101,6 +101,7 @@ func initRootLogger(levelStr, env string) zerolog.Logger {
 	rootLogger := zerolog.New(os.Stdout).With().
 		Timestamp().
 		Str("service", serviceName).
+		Caller().
 		Logger()
 
 	return rootLogger

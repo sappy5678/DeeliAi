@@ -34,8 +34,6 @@ type repoColumnPatternUser struct {
 	Email        string
 	Username     string
 	PasswordHash string
-	CreatedAt    string
-	UpdatedAt    string
 }
 
 var repoColumnUser = repoColumnPatternUser{
@@ -51,8 +49,6 @@ func (c *repoColumnPatternUser) columns() string {
 		c.Email,
 		c.Username,
 		c.PasswordHash,
-		c.CreatedAt,
-		c.UpdatedAt,
 	}, ", ")
 }
 
@@ -70,13 +66,22 @@ func (r *PostgresRepository) CreateUser(ctx context.Context, param *user.User) (
 		return nil, common.NewError(common.ErrorCodeInternalProcess, err)
 	}
 
-	row := repoUser{}
-	if err = r.db.GetContext(ctx, &row, query, args...); err != nil {
+	_, err = r.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		if _, cerr := r.GetUserByEmail(ctx, param.Email); cerr == nil {
+			e := fmt.Errorf("user with email %s already exists", param.Email)
+			return nil, common.NewError(common.ErrorCodeParameterInvalid, e, common.WithMsg(e.Error()))
+		}
+		r.logger(ctx).Error().Str("query", query).Err(err).Msg("failed to get user")
 		return nil, common.NewError(common.ErrorCodeRemoteProcess, err)
 	}
 
-	result := user.User(row)
-	return &result, nil
+	result, cerr := r.GetUserByEmail(ctx, param.Email)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	return result, nil
 }
 
 func (r *PostgresRepository) GetUserByEmail(ctx context.Context, email string) (*user.User, common.Error) {
@@ -88,13 +93,14 @@ func (r *PostgresRepository) GetUserByEmail(ctx context.Context, email string) (
 	if err != nil {
 		return nil, common.NewError(common.ErrorCodeInternalProcess, err)
 	}
-	row := repoUser{}
 
+	row := repoUser{}
 	if err = r.db.GetContext(ctx, &row, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, common.NewError(common.ErrorCodeResourceNotFound, err, common.WithMsg("user is not found"))
 		}
-		return nil, common.NewError(common.ErrorCodeRemoteProcess, err)
+		r.logger(ctx).Error().Str("query", query).Err(err).Msg("failed to get user by email")
+		return nil, common.NewError(common.ErrorCodeRemoteProcess, err, common.WithMsg(query))
 	}
 
 	result := user.User(row)

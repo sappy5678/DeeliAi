@@ -20,10 +20,10 @@ func NewArticleService(ctx context.Context, articleRepo ArticleRepository) Artic
 		articleRepo: articleRepo,
 	}
 
-	recommendationService := NewRecommendationService(articleRepo)
+	recommendationService := NewRecommendationService(ctx, articleRepo)
 	service.RecommendationService = recommendationService
 
-	worker := NewMetadataWorker(service)
+	worker := NewMetadataWorker(ctx, service)
 
 	service.metadataWorker = worker
 

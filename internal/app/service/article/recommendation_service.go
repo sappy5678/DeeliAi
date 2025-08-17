@@ -19,7 +19,7 @@ type recommendationService struct {
 }
 
 // NewRecommendationService creates a new RecommendationService.
-func NewRecommendationService(articleRepo ArticleRepository) RecommendationService {
+func NewRecommendationService(ctx context.Context, articleRepo ArticleRepository) RecommendationService {
 	scheduler, _ := gocron.NewScheduler(gocron.WithLocation(time.UTC))
 
 	r := &recommendationService{
@@ -29,7 +29,7 @@ func NewRecommendationService(articleRepo ArticleRepository) RecommendationServi
 
 	r.scheduler.NewJob(
 		gocron.DurationJob(1*time.Minute), // for dev, adjust to 1 day in production
-		gocron.NewTask(r.refreshMaterializedView),
+		gocron.NewTask(r.refreshMaterializedView, ctx),
 		gocron.WithSingletonMode(gocron.LimitModeReschedule),
 		gocron.WithName("MaterializedViewRefresher"),
 	)
@@ -50,10 +50,10 @@ func (s *recommendationService) GetRecommendations(ctx context.Context, userID u
 }
 
 // refreshMaterializedView refreshes the materialized view
-func (r *recommendationService) refreshMaterializedView() common.Error {
-	r.logger(context.Background()).Info().Msg("refreshing materialized view")
-	if err := r.articleRepo.RefreshMaterializedView(context.Background()); err != nil {
-		r.logger(context.Background()).Error().Str("err", err.Error()).Msg("refreshing materialized view")
+func (r *recommendationService) refreshMaterializedView(ctx context.Context) common.Error {
+	r.logger(ctx).Info().Msg("refreshing materialized view")
+	if err := r.articleRepo.RefreshMaterializedView(ctx); err != nil {
+		r.logger(ctx).Error().Str("err", err.Error()).Msg("refreshing materialized view")
 		return err
 	}
 	return nil

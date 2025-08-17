@@ -39,8 +39,10 @@ func (a *repoArticle) toDomain() *article.Article {
 }
 
 const (
-	repoTableArticle                       = "articles"
-	repoMaterializedViewArticleAverageRate = "materialized_articles_average_rate"
+	repoTableArticle = "articles"
+
+	repoMaterializedViewArticleAverageRate   = "materialized_articles_average_rate"
+	repoMaterializedViewArticleAverageRateID = "article_id"
 )
 
 type repoColumnPatternArticle struct {
@@ -227,14 +229,12 @@ func (r *PostgresRepository) ListArticles(ctx context.Context, userID uuid.UUID,
 			repoTableUserArticle, repoColumnUserArticle.ArticleID,
 			repoTableArticle, repoColumnArticle.ID)).
 		Where(where).
-		OrderBy(fmt.Sprintf("%s.%s ASC", repoTableArticle, repoColumnArticle.ID)).
 		Limit(uint64(limit)).
 		ToSql()
 	if err != nil {
 		r.logger(ctx).Error().Str("query", query).Err(err).Msg("failed to build select query for articles")
 		return nil, common.NewError(common.ErrorCodeInternalProcess, errors.Wrap(err, "failed to build select query for articles"))
 	}
-
 	var rows []repoArticle
 	if err = r.db.SelectContext(ctx, &rows, query, args...); err != nil {
 		r.logger(ctx).Error().Str("query", query).Err(err).Msg("failed to select articles")
@@ -541,7 +541,7 @@ func (r *PostgresRepository) GetTopRatedArticlesExcludingUser(ctx context.Contex
 		Join(fmt.Sprintf("%s ON %s.%s = %s.%s",
 			repoTableArticle,
 			repoTableArticle, repoColumnArticle.ID,
-			repoMaterializedViewArticleAverageRate, repoColumnArticle.ID)).
+			repoMaterializedViewArticleAverageRate, repoMaterializedViewArticleAverageRateID)).
 		LeftJoin(fmt.Sprintf("%s ON %s.%s = %s.%s AND %s.%s = ?",
 			repoTableUserArticle,
 			repoTableUserArticle, repoColumnUserArticle.ArticleID,

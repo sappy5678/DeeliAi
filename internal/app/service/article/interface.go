@@ -24,7 +24,7 @@ type ArticleRepository interface {
 	IncrementMetadataFetchRetryCount(ctx context.Context, retryID int64) common.Error
 	GetArticleByID(ctx context.Context, articleID uuid.UUID) (*article.Article, common.Error)
 	UpdateArticle(ctx context.Context, art *article.Article) common.Error
-	GetTopRatedArticlesExcludingUser(ctx context.Context, excludedUserID uuid.UUID, limit int) ([]*article.Article, common.Error)
+	GetTopRatedArticlesExcludingUser(ctx context.Context, excludeUserID uuid.UUID, limit int) (article.RecommendationArticles, common.Error)
 	RefreshMaterializedView(ctx context.Context) common.Error
 }
 
@@ -36,5 +36,5 @@ type ArticleService interface {
 	RateArticle(ctx context.Context, userID uuid.UUID, articleID uuid.UUID, rate int16) common.Error
 	GetArticleRating(ctx context.Context, userID uuid.UUID, articleID uuid.UUID) (*article.UserArticle, common.Error)
 	DeleteArticleRating(ctx context.Context, userID uuid.UUID, articleID uuid.UUID) common.Error
-	GetRecommendations(ctx context.Context, userID uuid.UUID, limit int) ([]article.Recommendation, common.Error)
+	GetRecommendations(ctx context.Context, userID uuid.UUID, limit int) (article.RecommendationArticles, common.Error)
 }

@@ -19,24 +19,22 @@ import (
 // --- article table ---
 
 type repoArticle struct {
-	ID            uuid.UUID       `db:"id"`
-	URL           string          `db:"url"`
-	Title         sql.NullString  `db:"title"`
-	Description   sql.NullString  `db:"description"`
-	ImageURL      sql.NullString  `db:"image_url"`
-	Metadata      json.RawMessage `db:"metadata"`
-	AverageRating float64         `db:"average_rating"`
+	ID          uuid.UUID       `db:"id"`
+	URL         string          `db:"url"`
+	Title       sql.NullString  `db:"title"`
+	Description sql.NullString  `db:"description"`
+	ImageURL    sql.NullString  `db:"image_url"`
+	Metadata    json.RawMessage `db:"metadata"`
 }
 
 func (a *repoArticle) toDomain() *article.Article {
 	return &article.Article{
-		ID:            a.ID,
-		URL:           a.URL,
-		Title:         a.Title.String,
-		Description:   a.Description.String,
-		ImageURL:      a.ImageURL.String,
-		Metadata:      a.Metadata,
-		AverageRating: a.AverageRating,
+		ID:          a.ID,
+		URL:         a.URL,
+		Title:       a.Title.String,
+		Description: a.Description.String,
+		ImageURL:    a.ImageURL.String,
+		Metadata:    a.Metadata,
 	}
 }
 
@@ -88,7 +86,6 @@ func (c repoColumnPatternArticle) materializedViewColumns() string {
 		c.Description,
 		c.ImageURL,
 		c.Metadata,
-		c.AverageRating,
 	}
 	for i, v := range col {
 		col[i] = fmt.Sprintf("%s.%s", repoMaterializedViewArticleAverageRate, v)
@@ -543,16 +540,23 @@ func (r *PostgresRepository) UpdateArticle(ctx context.Context, art *article.Art
 	return nil
 }
 
-func (r *PostgresRepository) GetTopRatedArticlesExcludingUser(ctx context.Context, excludedUserID uuid.UUID, limit int) ([]*article.Article, common.Error) {
-	selectColumns := strings.Split(repoColumnArticle.columns(), ", ")
-	selectColumns = append(selectColumns, fmt.Sprintf("%s.%s", repoMaterializedViewArticleAverageRate, repoColumnArticle.AverageRating))
+func (r *PostgresRepository) GetTopRatedArticlesExcludingUser(ctx context.Context, excludedUserID uuid.UUID, limit int) (article.RecommendationArticles, common.Error) {
+	selectColumns := []string{
+		fmt.Sprintf("%s.%s", repoTableArticle, repoColumnArticle.ID),
+		fmt.Sprintf("%s.%s", repoTableArticle, repoColumnArticle.URL),
+		fmt.Sprintf("%s.%s", repoTableArticle, repoColumnArticle.Title),
+		fmt.Sprintf("%s.%s", repoTableArticle, repoColumnArticle.Description),
+		fmt.Sprintf("%s.%s", repoTableArticle, repoColumnArticle.ImageURL),
+		fmt.Sprintf("%s.%s", repoTableArticle, repoColumnArticle.Metadata),
+		fmt.Sprintf("%s.%s", repoMaterializedViewArticleAverageRate, repoColumnArticle.AverageRating),
+	}
 
 	query, args, err := r.pgsq.Select(selectColumns...).
 		From(repoMaterializedViewArticleAverageRate).
 		Join(fmt.Sprintf("%s ON %s.%s = %s.%s",
 			repoTableArticle,
 			repoTableArticle, repoColumnArticle.ID,
-			repoMaterializedViewArticleAverageRate, repoColumnUserArticle.ArticleID)).
+			repoMaterializedViewArticleAverageRate, repoColumnArticle.ID)).
 		LeftJoin(fmt.Sprintf("%s ON %s.%s = %s.%s AND %s.%s = ?",
 			repoTableUserArticle,
 			repoTableUserArticle, repoColumnUserArticle.ArticleID,
@@ -566,15 +570,23 @@ func (r *PostgresRepository) GetTopRatedArticlesExcludingUser(ctx context.Contex
 		return nil, common.NewError(common.ErrorCodeInternalProcess, errors.Wrap(err, "failed to build select query for top rated articles excluding user"))
 	}
 
-	var rows []repoArticle
+	type repoRecommendation struct {
+		repoArticle
+		AverageRating float64 `db:"average_rating"`
+	}
+
+	var rows []repoRecommendation
 	if err = r.db.SelectContext(ctx, &rows, query, args...); err != nil {
 		return nil, common.NewError(common.ErrorCodeRemoteProcess, errors.Wrap(err, "failed to select top rated articles excluding user"))
 	}
 
-	articles := make([]*article.Article, 0, len(rows))
+	recommendations := make(article.RecommendationArticles, 0, len(rows))
 	for _, row := range rows {
-		articles = append(articles, row.toDomain())
+		recommendations = append(recommendations, article.RecommendationArticle{
+			Article:       row.repoArticle.toDomain(),
+			AverageRating: row.AverageRating,
+		})
 	}
 
-	return articles, nil
+	return recommendations, nil
 }

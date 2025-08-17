@@ -2,7 +2,6 @@ package article
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	gocron "github.com/go-co-op/gocron/v2"
@@ -15,7 +14,7 @@ import (
 
 // RecommendationService defines the interface for article recommendation operations.
 type RecommendationService interface {
-	GetRecommendations(ctx context.Context, userID uuid.UUID, limit int) ([]article.Recommendation, common.Error)
+	GetRecommendations(ctx context.Context, userID uuid.UUID, limit int) (article.RecommendationArticles, common.Error)
 }
 
 // recommendationService implements RecommendationService.
@@ -46,20 +45,10 @@ func NewRecommendationService(articleRepo ArticleRepository) RecommendationServi
 }
 
 // GetRecommendations implements RecommendationService.
-func (s *recommendationService) GetRecommendations(ctx context.Context, userID uuid.UUID, limit int) ([]article.Recommendation, common.Error) {
-	// Get top rated articles excluding user's collection in one go
-	articles, err := s.articleRepo.GetTopRatedArticlesExcludingUser(ctx, userID, limit)
+func (s *recommendationService) GetRecommendations(ctx context.Context, userID uuid.UUID, limit int) (article.RecommendationArticles, common.Error) {
+	recommendations, err := s.articleRepo.GetTopRatedArticlesExcludingUser(ctx, userID, limit)
 	if err != nil {
-		return nil, common.NewError(common.ErrorCodeInternalProcess, fmt.Errorf("failed to get top rated articles: %w", err))
-	}
-
-	// Convert articles to recommendations
-	recommendations := make([]article.Recommendation, len(articles))
-	for i, a := range articles {
-		recommendations[i] = article.Recommendation{
-			Article: *a,
-			Score:   a.AverageRating,
-		}
+		return nil, err
 	}
 
 	return recommendations, nil

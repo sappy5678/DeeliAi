@@ -25,8 +25,6 @@ type repoArticle struct {
 	Description   sql.NullString  `db:"description"`
 	ImageURL      sql.NullString  `db:"image_url"`
 	Metadata      json.RawMessage `db:"metadata"`
-	CreatedAt     time.Time       `db:"created_at"`
-	UpdatedAt     time.Time       `db:"updated_at"`
 	AverageRating float64         `db:"average_rating"`
 }
 
@@ -38,8 +36,6 @@ func (a *repoArticle) toDomain() *article.Article {
 		Description:   a.Description.String,
 		ImageURL:      a.ImageURL.String,
 		Metadata:      a.Metadata,
-		CreatedAt:     a.CreatedAt,
-		UpdatedAt:     a.UpdatedAt,
 		AverageRating: a.AverageRating,
 	}
 }
@@ -56,8 +52,6 @@ type repoColumnPatternArticle struct {
 	Description   string
 	ImageURL      string
 	Metadata      string
-	CreatedAt     string
-	UpdatedAt     string
 	AverageRating string
 }
 
@@ -68,8 +62,6 @@ var repoColumnArticle = repoColumnPatternArticle{
 	Description:   "description",
 	ImageURL:      "image_url",
 	Metadata:      "metadata",
-	CreatedAt:     "created_at",
-	UpdatedAt:     "updated_at",
 	AverageRating: "average_rating",
 }
 
@@ -81,8 +73,6 @@ func (c repoColumnPatternArticle) columns() string {
 		c.Description,
 		c.ImageURL,
 		c.Metadata,
-		c.CreatedAt,
-		c.UpdatedAt,
 	}
 	for i, v := range col {
 		col[i] = fmt.Sprintf("%s.%s", repoTableArticle, v)
@@ -98,8 +88,6 @@ func (c repoColumnPatternArticle) materializedViewColumns() string {
 		c.Description,
 		c.ImageURL,
 		c.Metadata,
-		c.CreatedAt,
-		c.UpdatedAt,
 		c.AverageRating,
 	}
 	for i, v := range col {
@@ -357,8 +345,6 @@ type repoMetadataFetchRetry struct {
 	NextAttemptAt sql.NullTime   `db:"next_attempt_at"`
 	Status        int16          `db:"status"`
 	ErrorMessage  sql.NullString `db:"error_message"`
-	CreatedAt     time.Time      `db:"created_at"`
-	UpdatedAt     time.Time      `db:"updated_at"`
 }
 
 func (r *repoMetadataFetchRetry) toDomain() *article.MetadataFetchRetry {
@@ -380,8 +366,6 @@ func (r *repoMetadataFetchRetry) toDomain() *article.MetadataFetchRetry {
 		NextAttemptAt: nextAttemptAt,
 		Status:        article.RetryStatus(r.Status),
 		ErrorMessage:  r.ErrorMessage.String,
-		CreatedAt:     r.CreatedAt,
-		UpdatedAt:     r.UpdatedAt,
 	}
 }
 
@@ -396,8 +380,6 @@ type repoColumnPatternMetadataFetchRetries struct {
 	NextAttemptAt string
 	Status        string
 	ErrorMessage  string
-	CreatedAt     string
-	UpdatedAt     string
 }
 
 var repoColumnMetadataFetchRetries = repoColumnPatternMetadataFetchRetries{
@@ -409,8 +391,6 @@ var repoColumnMetadataFetchRetries = repoColumnPatternMetadataFetchRetries{
 	NextAttemptAt: "next_attempt_at",
 	Status:        "status",
 	ErrorMessage:  "error_message",
-	CreatedAt:     "created_at",
-	UpdatedAt:     "updated_at",
 }
 
 func (c repoColumnPatternMetadataFetchRetries) columns() string {
@@ -423,8 +403,6 @@ func (c repoColumnPatternMetadataFetchRetries) columns() string {
 		c.NextAttemptAt,
 		c.Status,
 		c.ErrorMessage,
-		c.CreatedAt,
-		c.UpdatedAt,
 	}, ", ")
 }
 
@@ -548,7 +526,6 @@ func (r *PostgresRepository) UpdateArticle(ctx context.Context, art *article.Art
 		repoColumnArticle.Description: art.Description,
 		repoColumnArticle.ImageURL:    art.ImageURL,
 		repoColumnArticle.Metadata:    art.Metadata,
-		repoColumnArticle.UpdatedAt:   time.Now(),
 	}
 
 	query, args, err := r.pgsq.Update(repoTableArticle).

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -26,8 +25,6 @@ type repoUser struct {
 	Email        string    `db:"email"`
 	Username     string    `db:"username"`
 	PasswordHash string    `db:"password_hash"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
 }
 
 const repoTableUser = "users"
@@ -46,8 +43,6 @@ var repoColumnUser = repoColumnPatternUser{
 	Email:        "email",
 	Username:     "username",
 	PasswordHash: "password_hash",
-	CreatedAt:    "created_at",
-	UpdatedAt:    "updated_at",
 }
 
 func (c *repoColumnPatternUser) columns() string {

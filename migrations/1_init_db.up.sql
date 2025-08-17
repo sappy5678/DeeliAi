@@ -4,8 +4,7 @@ CREATE TABLE users (
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    
 );
 
 -- Index for users
@@ -20,8 +19,7 @@ CREATE TABLE articles (
     description TEXT,
     image_url TEXT,
     metadata JSONB DEFAULT '{}'::jsonb NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    
 );
 
 -- Index for articles
@@ -33,9 +31,7 @@ CREATE TABLE user_articles (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
     rate SMALLINT DEFAULT 0, -- 0: not rated, 1-5: rate 
-    collected_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (user_id, article_id)
-);
+    collected_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
 
 -- Index for user_articles
 -- CREATE INDEX idx_user_articles_user_id ON user_articles (user_id);
@@ -50,11 +46,10 @@ CREATE TABLE metadata_fetch_retries (
     url TEXT NOT NULL,
     retry_count SMALLINT DEFAULT 0 NOT NULL,
     last_attempt_at TIMESTAMP WITH TIME ZONE,
-    next_attempt_at TIMESTAMP WITH TIME ZONE,
+    next_attempt_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     status SMALLINT NOT NULL DEFAULT 0, -- 0: pending, 1: success, 2: failed
     error_message TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    
 );
 
 -- Index for metadata_fetch_retries

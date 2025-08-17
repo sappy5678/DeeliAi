@@ -8,22 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sappy5678/DeeliAi/internal/domain/article"
 	"github.com/sappy5678/DeeliAi/testdata"
 )
-
-func assertArticle(t *testing.T, expected *article.Article, actual *article.Article) {
-	require.NotNil(t, actual)
-	assert.Equal(t, expected.URL, actual.URL)
-	assert.Equal(t, expected.Title, actual.Title)
-	assert.Equal(t, expected.Description, actual.Description)
-	assert.Equal(t, expected.ImageURL, actual.ImageURL)
-}
 
 func TestPostgresRepository_CreateArticle(t *testing.T) {
 	db := getTestPostgresDB()
 	repo := initRepository(t, db, testdata.Path(testdata.TestDataUser))
-
 	url := "https://example.com/new-article"
 
 	art, err := repo.CreateArticle(context.Background(), url)

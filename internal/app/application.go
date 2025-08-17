@@ -50,14 +50,14 @@ func NewApplication(ctx context.Context, wg *sync.WaitGroup, params ApplicationP
 	}
 	pgRepo := postgres.NewPostgresRepository(ctx, db)
 
-	// Initialize TokenService
+	// service initialization
 	tokenService := user.NewTokenService(ctx, params.TokenSigningKey, params.TokenExpiryDuration, params.TokenIssuer)
-	authService := user.NewAuthService(ctx, tokenService)
+
 	// Create application
 	app := &Application{
 		Params:         params,
 		ArticleService: article.NewArticleService(ctx, pgRepo),
-		UserService:    user.NewUserService(ctx, pgRepo, authService),
+		UserService:    user.NewUserService(ctx, pgRepo, tokenService),
 	}
 
 	return app, nil

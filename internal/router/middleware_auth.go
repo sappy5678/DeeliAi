@@ -41,9 +41,7 @@ func (m *AuthMiddlewareBearer) Required() gin.HandlerFunc {
 			return
 		}
 
-		// Validate token
-		// Assuming AuthService now has ValidateUserToken
-		userID, cerr := m.app.UserService.ValidateUserToken(ctx, tokens[1])
+		userID, cerr := m.app.UserService.ValidateToken(ctx, tokens[1])
 		if cerr != nil {
 			respondWithError(c, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New(cerr.Error()), common.WithMsg(cerr.ClientMsg())))
 			return

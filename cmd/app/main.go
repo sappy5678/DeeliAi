@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	AppName    = "crescendo-barter"
+	AppName    = "app"
 	AppVersion = "unknown_version"
 	AppBuild   = "unknown_build"
 )
@@ -27,7 +27,7 @@ const (
 	defaultPort                    = "9000"
 	defaultTokenSigningKey         = "cb-signing-key" // nolint
 	defaultTokenExpiryDurationHour = "8"
-	defaultTokenTokenIssuer        = "crescendo-barter"
+	defaultTokenTokenIssuer        = "app"
 )
 
 type AppConfig struct {

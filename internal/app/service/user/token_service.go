@@ -6,6 +6,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+
+	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 type TokenServiceImpl struct {
@@ -27,7 +29,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func (s *TokenServiceImpl) GenerateToken(userID uuid.UUID) (string, error) {
+func (s *TokenServiceImpl) GenerateToken(ctx context.Context, userID uuid.UUID) (string, common.Error) {
 	claims := Claims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -42,23 +44,23 @@ func (s *TokenServiceImpl) GenerateToken(userID uuid.UUID) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(s.signingKey)
 	if err != nil {
-		return "", err
+		return "", common.NewError(common.ErrorCodeInternalProcess, err)
 	}
 
 	return signedToken, nil
 }
 
-func (s *TokenServiceImpl) ValidateToken(tokenString string) (uuid.UUID, error) {
+func (s *TokenServiceImpl) ValidateToken(ctx context.Context, tokenString string) (uuid.UUID, common.Error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return s.signingKey, nil
 	})
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, common.NewError(common.ErrorCodeParameterInvalid, err)
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return uuid.Nil, jwt.ErrInvalidKey
+		return uuid.Nil, common.NewError(common.ErrorCodeParameterInvalid, jwt.ErrInvalidKey)
 	}
 
 	return claims.UserID, nil

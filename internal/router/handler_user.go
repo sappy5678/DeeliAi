@@ -7,7 +7,7 @@ import (
 
 	"github.com/sappy5678/DeeliAi/internal/app"
 	"github.com/sappy5678/DeeliAi/internal/domain/common"
-	"github.com/sappy5678/DeeliAi/internal/domain/user" // Keep domain user
+	"github.com/sappy5678/DeeliAi/internal/domain/user"
 )
 
 type signUpRequest struct {

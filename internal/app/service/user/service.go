@@ -12,20 +12,14 @@ import (
 )
 
 type userService struct {
-	AuthService
+	TokenService
 	userRepo postgres.UserRepository
 }
 
-type UserServiceParam struct {
-	UserRepo postgres.UserRepository
-}
-
-// interface {
-
-func NewUserService(ctx context.Context, userRepo postgres.UserRepository, authService AuthService) Service {
+func NewUserService(ctx context.Context, userRepo postgres.UserRepository, authService TokenService) Service {
 	return &userService{
-		userRepo:    userRepo,
-		AuthService: authService,
+		userRepo:     userRepo,
+		TokenService: authService,
 	}
 }
 
@@ -46,7 +40,7 @@ func (s *userService) SignUp(ctx context.Context, email string, username string,
 		return nil, "", cerr
 	}
 
-	token, err := s.AuthService.GenerateToken(createdUser.ID)
+	token, err := s.TokenService.GenerateToken(ctx, createdUser.ID)
 	if err != nil {
 		return nil, "", common.NewError(common.ErrorCodeInternalProcess, err)
 	}
@@ -65,7 +59,7 @@ func (s *userService) Login(ctx context.Context, email string, password string) 
 		return nil, "", common.NewError(common.ErrorCodeAuthNotAuthenticated, err, common.WithMsg("invalid password")) // Changed here
 	}
 
-	token, err := s.AuthService.GenerateToken(foundUser.ID)
+	token, err := s.TokenService.GenerateToken(ctx, foundUser.ID)
 	if err != nil {
 		return nil, "", common.NewError(common.ErrorCodeInternalProcess, err)
 	}

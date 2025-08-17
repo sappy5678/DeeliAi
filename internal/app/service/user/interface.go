@@ -10,20 +10,15 @@ import (
 )
 
 type Service interface {
-	AuthService
+	TokenService
 	SignUp(ctx context.Context, email string, username string, password string) (*user.User, string, common.Error)
 	Login(ctx context.Context, email string, password string) (*user.User, string, common.Error)
 	GetUser(ctx context.Context, userID uuid.UUID) (*user.User, common.Error)
 }
 
-type AuthService interface {
-	TokenService
-	ValidateUserToken(ctx context.Context, token string) (uuid.UUID, common.Error)
-}
-
 type TokenService interface {
-	GenerateToken(userID uuid.UUID) (string, error)
-	ValidateToken(token string) (uuid.UUID, error)
+	GenerateToken(ctx context.Context, userID uuid.UUID) (string, common.Error)
+	ValidateToken(ctx context.Context, token string) (uuid.UUID, common.Error)
 }
 
 //go:generate mockgen -destination automock/user_repository.go -package=automock . UserRepository

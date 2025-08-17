@@ -73,7 +73,7 @@ func NewApplication(ctx context.Context, wg *sync.WaitGroup, params ApplicationP
 			GoodRepo: pgRepo,
 		}),
 		ArticleService: article.NewArticleService(pgRepo),
-		UserService:    user.NewUserService(pgRepo, tokenService), // Initialize UserService
+		UserService:    user.NewUserService(pgRepo, tokenService),
 	}
 
 	return app, nil

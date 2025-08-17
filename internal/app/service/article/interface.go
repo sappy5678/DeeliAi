@@ -18,6 +18,12 @@ type ArticleRepository interface {
 	DeleteUserArticle(ctx context.Context, userID uuid.UUID, articleID uuid.UUID) common.Error
 	UpdateUserArticleRate(ctx context.Context, userID uuid.UUID, articleID uuid.UUID, rate int16) common.Error
 	DeleteUserArticleRate(ctx context.Context, userID uuid.UUID, articleID uuid.UUID) common.Error
+	CreateMetadataFetchRetry(ctx context.Context, articleID uuid.UUID, url string) common.Error
+	GetPendingMetadataFetchRetries(ctx context.Context) ([]*article.MetadataFetchRetry, common.Error)
+	UpdateMetadataFetchRetryStatus(ctx context.Context, retryID int64, status int16, errorMessage string) common.Error
+	IncrementMetadataFetchRetryCount(ctx context.Context, retryID int64) common.Error
+	GetArticleByID(ctx context.Context, articleID uuid.UUID) (*article.Article, common.Error)
+	UpdateArticle(ctx context.Context, art *article.Article) common.Error
 }
 
 // ArticleService defines the interface for article-related business logic.

@@ -40,13 +40,14 @@ CREATE TABLE user_articles (
 -- Index for user_articles
 -- CREATE INDEX idx_user_articles_user_id ON user_articles (user_id);
 CREATE INDEX idx_user_articles_article_id ON user_articles (article_id);
-CREATE INDEX idx_user_articles_user_article ON user_articles (user_id, article_id);
+CREATE UNIQUE INDEX idx_user_articles_user_article ON user_articles (user_id, article_id);
 
 
 -- Table: metadata_fetch_retries
 CREATE TABLE metadata_fetch_retries (
     id BIGSERIAL PRIMARY KEY,
     article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    url TEXT NOT NULL,
     retry_count SMALLINT DEFAULT 0 NOT NULL,
     last_attempt_at TIMESTAMP WITH TIME ZONE,
     next_attempt_at TIMESTAMP WITH TIME ZONE,
@@ -57,5 +58,5 @@ CREATE TABLE metadata_fetch_retries (
 );
 
 -- Index for metadata_fetch_retries
-CREATE INDEX idx_metadata_fetch_retries_article_id ON metadata_fetch_retries (article_id);
+CREATE UNIQUE INDEX idx_metadata_fetch_retries_article_id ON metadata_fetch_retries (article_id);
 CREATE INDEX idx_metadata_fetch_retries_next_attempt_status ON metadata_fetch_retries (next_attempt_at, status);

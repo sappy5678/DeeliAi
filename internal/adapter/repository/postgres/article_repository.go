@@ -312,3 +312,223 @@ func (r *PostgresRepository) UpdateUserArticleRate(ctx context.Context, userID u
 func (r *PostgresRepository) DeleteUserArticleRate(ctx context.Context, userID uuid.UUID, articleID uuid.UUID) common.Error {
 	return r.UpdateUserArticleRate(ctx, userID, articleID, 0)
 }
+
+// --- metadata_fetch_retries table ---
+
+type repoMetadataFetchRetry struct {
+	ID            int64          `db:"id"`
+	ArticleID     uuid.UUID      `db:"article_id"`
+	URL           string         `db:"url"`
+	RetryCount    int16          `db:"retry_count"`
+	LastAttemptAt sql.NullTime   `db:"last_attempt_at"`
+	NextAttemptAt sql.NullTime   `db:"next_attempt_at"`
+	Status        int16          `db:"status"`
+	ErrorMessage  sql.NullString `db:"error_message"`
+	CreatedAt     time.Time      `db:"created_at"`
+	UpdatedAt     time.Time      `db:"updated_at"`
+}
+
+func (r *repoMetadataFetchRetry) toDomain() *article.MetadataFetchRetry {
+	var lastAttemptAt *time.Time
+	if r.LastAttemptAt.Valid {
+		lastAttemptAt = &r.LastAttemptAt.Time
+	}
+	var nextAttemptAt *time.Time
+	if r.NextAttemptAt.Valid {
+		nextAttemptAt = &r.NextAttemptAt.Time
+	}
+
+	return &article.MetadataFetchRetry{
+		ID:            r.ID,
+		ArticleID:     r.ArticleID,
+		URL:           r.URL,
+		RetryCount:    r.RetryCount,
+		LastAttemptAt: lastAttemptAt,
+		NextAttemptAt: nextAttemptAt,
+		Status:        article.RetryStatus(r.Status),
+		ErrorMessage:  r.ErrorMessage.String,
+		CreatedAt:     r.CreatedAt,
+		UpdatedAt:     r.UpdatedAt,
+	}
+}
+
+const repoTableMetadataFetchRetries = "metadata_fetch_retries"
+
+type repoColumnPatternMetadataFetchRetries struct {
+	ID            string
+	ArticleID     string
+	URL           string
+	RetryCount    string
+	LastAttemptAt string
+	NextAttemptAt string
+	Status        string
+	ErrorMessage  string
+	CreatedAt     string
+	UpdatedAt     string
+}
+
+var repoColumnMetadataFetchRetries = repoColumnPatternMetadataFetchRetries{
+	ID:            "id",
+	ArticleID:     "article_id",
+	URL:           "url",
+	RetryCount:    "retry_count",
+	LastAttemptAt: "last_attempt_at",
+	NextAttemptAt: "next_attempt_at",
+	Status:        "status",
+	ErrorMessage:  "error_message",
+	CreatedAt:     "created_at",
+	UpdatedAt:     "updated_at",
+}
+
+func (c repoColumnPatternMetadataFetchRetries) columns() string {
+	return strings.Join([]string{
+		c.ID,
+		c.ArticleID,
+		c.URL,
+		c.RetryCount,
+		c.LastAttemptAt,
+		c.NextAttemptAt,
+		c.Status,
+		c.ErrorMessage,
+		c.CreatedAt,
+		c.UpdatedAt,
+	}, ", ")
+}
+
+func (r *PostgresRepository) CreateMetadataFetchRetry(ctx context.Context, articleID uuid.UUID, url string) common.Error {
+	insert := map[string]interface{}{
+		repoColumnMetadataFetchRetries.ArticleID: articleID,
+		repoColumnMetadataFetchRetries.URL:       url,
+	}
+
+	query, args, err := r.pgsq.Insert(repoTableMetadataFetchRetries).
+		SetMap(insert).
+		Suffix(fmt.Sprintf("ON CONFLICT (%s) DO NOTHING", repoColumnMetadataFetchRetries.ArticleID)).
+		ToSql()
+	if err != nil {
+		return common.NewError(common.ErrorCodeInternalProcess, errors.Wrap(err, "failed to build insert query for metadata_fetch_retries"))
+	}
+
+	if _, err = r.db.ExecContext(ctx, query, args...); err != nil {
+		return common.NewError(common.ErrorCodeRemoteProcess, errors.Wrap(err, "failed to insert metadata_fetch_retries"))
+	}
+
+	return nil
+}
+
+func (r *PostgresRepository) GetPendingMetadataFetchRetries(ctx context.Context) ([]*article.MetadataFetchRetry, common.Error) {
+	query, args, err := r.pgsq.Select(repoColumnMetadataFetchRetries.columns()).
+		From(repoTableMetadataFetchRetries).
+		Where(sq.And{
+			sq.Eq{repoColumnMetadataFetchRetries.Status: 0}, // Pending status
+			sq.LtOrEq{repoColumnMetadataFetchRetries.RetryCount: 3},
+			sq.Or{
+				sq.Eq{repoColumnMetadataFetchRetries.NextAttemptAt: nil},
+				sq.LtOrEq{repoColumnMetadataFetchRetries.NextAttemptAt: time.Now()},
+			},
+		}).
+		ToSql()
+	if err != nil {
+		return nil, common.NewError(common.ErrorCodeInternalProcess, errors.Wrap(err, "failed to build select query for pending metadata fetch retries"))
+	}
+
+	var rows []repoMetadataFetchRetry
+	if err = r.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, common.NewError(common.ErrorCodeRemoteProcess, errors.Wrap(err, "failed to select pending metadata fetch retries"))
+	}
+
+	retries := make([]*article.MetadataFetchRetry, 0, len(rows))
+	for _, row := range rows {
+		retries = append(retries, row.toDomain())
+	}
+
+	return retries, nil
+}
+
+func (r *PostgresRepository) UpdateMetadataFetchRetryStatus(ctx context.Context, retryID int64, status int16, errorMessage string) common.Error {
+	update := map[string]interface{}{
+		repoColumnMetadataFetchRetries.Status:        status,
+		repoColumnMetadataFetchRetries.ErrorMessage:  errorMessage,
+		repoColumnMetadataFetchRetries.LastAttemptAt: time.Now(),
+	}
+
+	query, args, err := r.pgsq.Update(repoTableMetadataFetchRetries).
+		SetMap(update).
+		Where(sq.Eq{repoColumnMetadataFetchRetries.ID: retryID}).
+		ToSql()
+	if err != nil {
+		return common.NewError(common.ErrorCodeInternalProcess, errors.Wrap(err, "failed to build update query for metadata fetch retry status"))
+	}
+
+	if _, err = r.db.ExecContext(ctx, query, args...); err != nil {
+		return common.NewError(common.ErrorCodeRemoteProcess, errors.Wrap(err, "failed to update metadata fetch retry status"))
+	}
+
+	return nil
+}
+
+func (r *PostgresRepository) IncrementMetadataFetchRetryCount(ctx context.Context, retryID int64) common.Error {
+	update := map[string]interface{}{
+		repoColumnMetadataFetchRetries.RetryCount:    sq.Expr(fmt.Sprintf("%s + 1", repoColumnMetadataFetchRetries.RetryCount)),
+		repoColumnMetadataFetchRetries.LastAttemptAt: time.Now(),
+		repoColumnMetadataFetchRetries.NextAttemptAt: sq.Expr(fmt.Sprintf("NOW() + INTERVAL '%d minutes'", 5)), // Next attempt in 5 minutes
+	}
+
+	query, args, err := r.pgsq.Update(repoTableMetadataFetchRetries).
+		SetMap(update).
+		Where(sq.Eq{repoColumnMetadataFetchRetries.ID: retryID}).
+		ToSql()
+	if err != nil {
+		return common.NewError(common.ErrorCodeInternalProcess, errors.Wrap(err, "failed to build update query for metadata fetch retry count"))
+	}
+
+	if _, err = r.db.ExecContext(ctx, query, args...); err != nil {
+		return common.NewError(common.ErrorCodeRemoteProcess, errors.Wrap(err, "failed to increment metadata fetch retry count"))
+	}
+
+	return nil
+}
+
+func (r *PostgresRepository) GetArticleByID(ctx context.Context, articleID uuid.UUID) (*article.Article, common.Error) {
+	query, args, err := r.pgsq.Select(repoColumnArticle.columns()).
+		From(repoTableArticle).
+		Where(sq.Eq{repoColumnArticle.ID: articleID}).
+		ToSql()
+	if err != nil {
+		return nil, common.NewError(common.ErrorCodeInternalProcess, errors.Wrap(err, "failed to build select query for article by ID"))
+	}
+
+	var row repoArticle
+	if err = r.db.GetContext(ctx, &row, query, args...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, common.NewError(common.ErrorCodeResourceNotFound, err)
+		}
+		return nil, common.NewError(common.ErrorCodeRemoteProcess, errors.Wrap(err, "failed to select article by ID"))
+	}
+
+	return row.toDomain(), nil
+}
+
+func (r *PostgresRepository) UpdateArticle(ctx context.Context, art *article.Article) common.Error {
+	update := map[string]interface{}{
+		repoColumnArticle.Title:       art.Title,
+		repoColumnArticle.Description: art.Description,
+		repoColumnArticle.ImageURL:    art.ImageURL,
+		repoColumnArticle.Metadata:    art.Metadata,
+		repoColumnArticle.UpdatedAt:   time.Now(),
+	}
+
+	query, args, err := r.pgsq.Update(repoTableArticle).
+		SetMap(update).
+		Where(sq.Eq{repoColumnArticle.ID: art.ID}).
+		ToSql()
+	if err != nil {
+		return common.NewError(common.ErrorCodeInternalProcess, errors.Wrap(err, "failed to build update query for article"))
+	}
+
+	if _, err = r.db.ExecContext(ctx, query, args...); err != nil {
+		return common.NewError(common.ErrorCodeRemoteProcess, errors.Wrap(err, "failed to update article"))
+	}
+
+	return nil
+}

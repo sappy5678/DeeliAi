@@ -4,19 +4,29 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 
 	"github.com/sappy5678/DeeliAi/internal/domain/article"
 	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
 type articleService struct {
-	articleRepo ArticleRepository
+	articleRepo    ArticleRepository
+	logger         zerolog.Logger
+	metadataWorker *MetadataWorker
 }
 
 func NewArticleService(articleRepo ArticleRepository) ArticleService {
-	return &articleService{
+	service := &articleService{
 		articleRepo: articleRepo,
 	}
+
+	worker := NewMetadataWorker(service)
+	worker.Start(context.Background())
+
+	service.metadataWorker = worker
+
+	return service
 }
 
 func (s *articleService) CreateArticle(ctx context.Context, userID uuid.UUID, url string) (*article.Article, common.Error) {
@@ -30,7 +40,11 @@ func (s *articleService) CreateArticle(ctx context.Context, userID uuid.UUID, ur
 		return nil, err
 	}
 
-	// TODO: Trigger background job for metadata fetching
+	err = s.articleRepo.CreateMetadataFetchRetry(ctx, art.ID, art.URL)
+	if err != nil {
+		s.logger.Err(err).Str("article_id", art.ID.String()).Msg("failed to create metadata fetch retry entry")
+		return nil, err
+	}
 
 	return art, nil
 }

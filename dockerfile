@@ -3,7 +3,7 @@ RUN apt update && apt install jq -y
 WORKDIR /app
 
 COPY go.* /app/
-RUN go mod download
+RUN go mod tidy && go mod vendor
 
 COPY . . 
 

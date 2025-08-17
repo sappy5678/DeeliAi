@@ -19,51 +19,58 @@ import (
 // --- article table ---
 
 type repoArticle struct {
-	ID          uuid.UUID       `db:"id"`
-	URL         string          `db:"url"`
-	Title       sql.NullString  `db:"title"`
-	Description sql.NullString  `db:"description"`
-	ImageURL    sql.NullString  `db:"image_url"`
-	Metadata    json.RawMessage `db:"metadata"`
-	CreatedAt   time.Time       `db:"created_at"`
-	UpdatedAt   time.Time       `db:"updated_at"`
+	ID            uuid.UUID       `db:"id"`
+	URL           string          `db:"url"`
+	Title         sql.NullString  `db:"title"`
+	Description   sql.NullString  `db:"description"`
+	ImageURL      sql.NullString  `db:"image_url"`
+	Metadata      json.RawMessage `db:"metadata"`
+	CreatedAt     time.Time       `db:"created_at"`
+	UpdatedAt     time.Time       `db:"updated_at"`
+	AverageRating float64         `db:"average_rating"`
 }
 
 func (a *repoArticle) toDomain() *article.Article {
 	return &article.Article{
-		ID:          a.ID,
-		URL:         a.URL,
-		Title:       a.Title.String,
-		Description: a.Description.String,
-		ImageURL:    a.ImageURL.String,
-		Metadata:    a.Metadata,
-		CreatedAt:   a.CreatedAt,
-		UpdatedAt:   a.UpdatedAt,
+		ID:            a.ID,
+		URL:           a.URL,
+		Title:         a.Title.String,
+		Description:   a.Description.String,
+		ImageURL:      a.ImageURL.String,
+		Metadata:      a.Metadata,
+		CreatedAt:     a.CreatedAt,
+		UpdatedAt:     a.UpdatedAt,
+		AverageRating: a.AverageRating,
 	}
 }
 
-const repoTableArticle = "articles"
+const (
+	repoTableArticle                       = "articles"
+	repoMaterializedViewArticleAverageRate = "materialized_articles_average_rate"
+)
 
 type repoColumnPatternArticle struct {
-	ID          string
-	URL         string
-	Title       string
-	Description string
-	ImageURL    string
-	Metadata    string
-	CreatedAt   string
-	UpdatedAt   string
+	ID            string
+	URL           string
+	Title         string
+	Description   string
+	ImageURL      string
+	Metadata      string
+	CreatedAt     string
+	UpdatedAt     string
+	AverageRating string
 }
 
 var repoColumnArticle = repoColumnPatternArticle{
-	ID:          "id",
-	URL:         "url",
-	Title:       "title",
-	Description: "description",
-	ImageURL:    "image_url",
-	Metadata:    "metadata",
-	CreatedAt:   "created_at",
-	UpdatedAt:   "updated_at",
+	ID:            "id",
+	URL:           "url",
+	Title:         "title",
+	Description:   "description",
+	ImageURL:      "image_url",
+	Metadata:      "metadata",
+	CreatedAt:     "created_at",
+	UpdatedAt:     "updated_at",
+	AverageRating: "average_rating",
 }
 
 func (c repoColumnPatternArticle) columns() string {
@@ -79,6 +86,24 @@ func (c repoColumnPatternArticle) columns() string {
 	}
 	for i, v := range col {
 		col[i] = fmt.Sprintf("%s.%s", repoTableArticle, v)
+	}
+	return strings.Join(col, ", ")
+}
+
+func (c repoColumnPatternArticle) materializedViewColumns() string {
+	col := []string{
+		c.ID,
+		c.URL,
+		c.Title,
+		c.Description,
+		c.ImageURL,
+		c.Metadata,
+		c.CreatedAt,
+		c.UpdatedAt,
+		c.AverageRating,
+	}
+	for i, v := range col {
+		col[i] = fmt.Sprintf("%s.%s", repoMaterializedViewArticleAverageRate, v)
 	}
 	return strings.Join(col, ", ")
 }
@@ -309,6 +334,14 @@ func (r *PostgresRepository) UpdateUserArticleRate(ctx context.Context, userID u
 	return nil
 }
 
+func (r *PostgresRepository) RefreshMaterializedView(ctx context.Context) common.Error {
+	_, err := r.db.ExecContext(ctx, "REFRESH MATERIALIZED VIEW CONCURRENTLY materialized_articles_average_rate;")
+	if err != nil {
+		return common.NewError(common.ErrorCodeRemoteProcess, errors.Wrap(err, "failed to refresh materialized view"))
+	}
+	return nil
+}
+
 func (r *PostgresRepository) DeleteUserArticleRate(ctx context.Context, userID uuid.UUID, articleID uuid.UUID) common.Error {
 	return r.UpdateUserArticleRate(ctx, userID, articleID, 0)
 }
@@ -531,4 +564,40 @@ func (r *PostgresRepository) UpdateArticle(ctx context.Context, art *article.Art
 	}
 
 	return nil
+}
+
+func (r *PostgresRepository) GetTopRatedArticlesExcludingUser(ctx context.Context, excludedUserID uuid.UUID, limit int) ([]*article.Article, common.Error) {
+	selectColumns := strings.Split(repoColumnArticle.columns(), ", ")
+	selectColumns = append(selectColumns, fmt.Sprintf("%s.%s", repoMaterializedViewArticleAverageRate, repoColumnArticle.AverageRating))
+
+	query, args, err := r.pgsq.Select(selectColumns...).
+		From(repoMaterializedViewArticleAverageRate).
+		Join(fmt.Sprintf("%s ON %s.%s = %s.%s",
+			repoTableArticle,
+			repoTableArticle, repoColumnArticle.ID,
+			repoMaterializedViewArticleAverageRate, repoColumnUserArticle.ArticleID)).
+		LeftJoin(fmt.Sprintf("%s ON %s.%s = %s.%s AND %s.%s = ?",
+			repoTableUserArticle,
+			repoTableUserArticle, repoColumnUserArticle.ArticleID,
+			repoTableArticle, repoColumnArticle.ID,
+			repoTableUserArticle, repoColumnUserArticle.UserID), excludedUserID).
+		Where(sq.Eq{fmt.Sprintf("%s.%s", repoTableUserArticle, repoColumnUserArticle.UserID): nil}).
+		OrderBy(fmt.Sprintf("%s.%s DESC", repoMaterializedViewArticleAverageRate, repoColumnArticle.AverageRating)).
+		Limit(uint64(limit)).
+		ToSql()
+	if err != nil {
+		return nil, common.NewError(common.ErrorCodeInternalProcess, errors.Wrap(err, "failed to build select query for top rated articles excluding user"))
+	}
+
+	var rows []repoArticle
+	if err = r.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, common.NewError(common.ErrorCodeRemoteProcess, errors.Wrap(err, "failed to select top rated articles excluding user"))
+	}
+
+	articles := make([]*article.Article, 0, len(rows))
+	for _, row := range rows {
+		articles = append(articles, row.toDomain())
+	}
+
+	return articles, nil
 }

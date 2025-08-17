@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
 	"github.com/sappy5678/DeeliAi/internal/app"
 	"github.com/sappy5678/DeeliAi/internal/domain/common"
@@ -54,13 +53,4 @@ func (m *AuthMiddlewareBearer) Required() gin.HandlerFunc {
 		c.Set(ContextKeyUserID, userID)
 		c.Next()
 	}
-}
-
-func GetCurrentUserID(c *gin.Context) (uuid.UUID, common.Error) {
-	userID, ok := c.Get(ContextKeyUserID)
-	if !ok {
-		return uuid.Nil, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New("user not found in context"))
-	}
-
-	return userID.(uuid.UUID), nil
 }

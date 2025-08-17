@@ -44,18 +44,13 @@ func SetTrader(c *gin.Context, trader barter.Trader) common.Error {
 	return nil
 }
 
-// GetUserIDFromContext retrieves the user ID from the Gin context.
-func GetUserIDFromContext(c *gin.Context) (uuid.UUID, common.Error) {
-	var userID uuid.UUID
-	val, ok := c.Get("user_id")
+func GetCurrentUserID(c *gin.Context) (uuid.UUID, common.Error) {
+	userID, ok := c.Get(ContextKeyUserID)
 	if !ok {
-		return uuid.Nil, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New("user ID not found in context"))
+		return uuid.Nil, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New("user not found in context"))
 	}
-	userID, ok = val.(uuid.UUID)
-	if !ok {
-		return uuid.Nil, common.NewError(common.ErrorCodeAuthNotAuthenticated, errors.New("user ID in context is not of type uuid.UUID"))
-	}
-	return userID, nil
+
+	return userID.(uuid.UUID), nil
 }
 
 // GetParamInt gets a key's value from Gin's URL param and transform it to int.

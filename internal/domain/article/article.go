@@ -9,14 +9,15 @@ import (
 
 // Article represents an article in the system.
 type Article struct {
-	ID          uuid.UUID
-	URL         string
-	Title       string
-	Description string
-	ImageURL    string
-	Metadata    json.RawMessage
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID            uuid.UUID
+	URL           string
+	Title         string
+	Description   string
+	ImageURL      string
+	Metadata      json.RawMessage
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	AverageRating float64
 }
 
 type RetryStatus int8

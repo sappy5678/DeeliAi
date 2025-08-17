@@ -17,7 +17,6 @@ import (
 )
 
 type MetadataWorker struct {
-	logger    zerolog.Logger
 	scheduler gocron.Scheduler
 	service   *articleService
 }
@@ -31,27 +30,16 @@ func NewMetadataWorker(service *articleService) *MetadataWorker {
 		scheduler: s,
 		service:   service,
 	}
-	_, err = w.scheduler.NewJob(
-		gocron.DurationJob(5*time.Minute),
+	w.scheduler.NewJob(
+		gocron.DurationJob(1*time.Minute),
 		gocron.NewTask(w.runMetadataFetchJob, context.Background()),
 		gocron.WithSingletonMode(gocron.LimitModeReschedule),
 		gocron.WithName("MetadataWorker"),
 	)
-	if err != nil {
-		w.logger.Err(err).Msg("failed to schedule metadata fetch job")
-		return nil
-	}
-	return w
-}
 
-func (w *MetadataWorker) Start(ctx context.Context) {
 	w.scheduler.Start()
-	w.logger.Info().Msg("MetadataWorker started")
-}
 
-func (w *MetadataWorker) Stop() {
-	w.scheduler.Shutdown()
-	w.logger.Info().Msg("MetadataWorker stopped")
+	return w
 }
 
 func (w *MetadataWorker) fetchFail(ctx context.Context, retry *article.MetadataFetchRetry, err error) {
@@ -59,36 +47,36 @@ func (w *MetadataWorker) fetchFail(ctx context.Context, retry *article.MetadataF
 	retry.RetryCount++
 	err = w.service.articleRepo.IncrementMetadataFetchRetryCount(ctx, retry.ID)
 	if err != nil {
-		w.logger.Err(err).Str("retry_id", fmt.Sprintf("%d", retry.ID)).Msg("failed to increment metadata fetch retry count")
+		w.logger(ctx).Err(err).Str("retry_id", fmt.Sprintf("%d", retry.ID)).Msg("failed to increment metadata fetch retry count")
 	}
 	if retry.RetryCount >= 3 {
 		err = w.service.articleRepo.UpdateMetadataFetchRetryStatus(ctx, retry.ID, 2, errorMessage)
 		if err != nil {
-			w.logger.Err(err).Str("retry_id", fmt.Sprintf("%d", retry.ID)).Msg("failed to update metadata fetch retry status to failed")
+			w.logger(ctx).Err(err).Str("retry_id", fmt.Sprintf("%d", retry.ID)).Msg("failed to update metadata fetch retry status to failed")
 		}
 	}
 }
 
 func (w *MetadataWorker) runMetadataFetchJob(ctx context.Context) {
-	w.logger.Info().Msg("running metadata fetch job")
+	w.logger(ctx).Info().Msg("running metadata fetch job")
 
 	retries, err := w.service.articleRepo.GetPendingMetadataFetchRetries(ctx)
 	if err != nil {
-		w.logger.Err(err).Msg("failed to get pending metadata fetch retries")
+		w.logger(ctx).Err(err).Msg("failed to get pending metadata fetch retries")
 		return
 	}
 
 	if len(retries) == 0 {
-		w.logger.Info().Msg("no pending metadata fetch retries")
+		w.logger(ctx).Info().Msg("no pending metadata fetch retries")
 		return
 	}
 
 	for _, retry := range retries {
-		w.logger.Info().Str("article_id", retry.ArticleID.String()).Int64("retry_id", retry.ID).Msg("attempting to fetch metadata for article")
+		w.logger(ctx).Info().Str("article_id", retry.ArticleID.String()).Int64("retry_id", retry.ID).Msg("attempting to fetch metadata for article")
 
 		info, err := fetchMetadata(retry.URL)
 		if err != nil {
-			w.logger.Err(err).Str("url", retry.URL).Msg("failed to fetch metadata")
+			w.logger(ctx).Err(err).Str("url", retry.URL).Msg("failed to fetch metadata")
 			w.fetchFail(ctx, retry, err)
 			continue
 		}
@@ -96,18 +84,18 @@ func (w *MetadataWorker) runMetadataFetchJob(ctx context.Context) {
 		// Metadata fetched successfully
 		metadataBytes, err := json.Marshal(info)
 		if err != nil {
-			w.logger.Err(err).Str("url", retry.URL).Msg("failed to marshal metadata")
+			w.logger(ctx).Err(err).Str("url", retry.URL).Msg("failed to marshal metadata")
 			w.fetchFail(ctx, retry, err)
 			continue
 		}
 
 		art, err := w.service.articleRepo.GetArticleByID(ctx, retry.ArticleID)
 		if err != nil {
-			w.logger.Err(err).Str("article_id", retry.ArticleID.String()).Msg("failed to get article by ID")
+			w.logger(ctx).Err(err).Str("article_id", retry.ArticleID.String()).Msg("failed to get article by ID")
 			w.fetchFail(ctx, retry, err)
 			continue
 		}
-		art.Title = info.Title
+				art.Title = info.Title
 		art.Description = info.Description
 		if len(info.Metadata["og:image"]) > 0 {
 			art.ImageURL = info.Metadata["og:image"][0]
@@ -115,16 +103,22 @@ func (w *MetadataWorker) runMetadataFetchJob(ctx context.Context) {
 		art.Metadata = metadataBytes
 		err = w.service.articleRepo.UpdateArticle(ctx, art)
 		if err != nil {
-			w.logger.Err(err).Str("article_id", retry.ArticleID.String()).Msg("failed to update article metadata")
+			w.logger(ctx).Err(err).Str("article_id", retry.ArticleID.String()).Msg("failed to update article metadata")
 			w.fetchFail(ctx, retry, err)
 			continue
 		}
 		err = w.service.articleRepo.UpdateMetadataFetchRetryStatus(ctx, retry.ID, 1, "")
 		if err != nil {
-			w.logger.Err(err).Str("retry_id", fmt.Sprintf("%d", retry.ID)).Msg("failed to update metadata fetch retry status to success")
+			w.logger(ctx).Err(err).Str("retry_id", fmt.Sprintf("%d", retry.ID)).Msg("failed to update metadata fetch retry status to success")
 		}
 
 	}
+}
+
+// logger wrap the execution context with component info
+func (s *MetadataWorker) logger(ctx context.Context) *zerolog.Logger {
+	l := zerolog.Ctx(ctx).With().Str("component", "metadata-worker").Logger()
+	return &l
 }
 
 type BasicMeta struct {

@@ -56,5 +56,6 @@ func registerAPIHandlers(router *gin.Engine, app *app.Application) {
 		articleGroup.PUT("/:article_id/rate", RateArticle(app))
 		articleGroup.GET("/:article_id/rate", GetArticleRating(app))
 		articleGroup.DELETE("/:article_id/rate", DeleteArticleRating(app))
+		articleGroup.GET("/recommendations", GetRecommendations(app))
 	}
 }

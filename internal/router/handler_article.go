@@ -272,7 +272,7 @@ func GetRecommendations(app *app.Application) gin.HandlerFunc {
 		}
 
 		// Transform to snake_case response
-		var recommendationResponses []RecommendationArticleResponse
+		recommendationResponses := []RecommendationArticleResponse{}
 		for _, rec := range recommendations {
 			articleResp := &ArticleRecommendationResponse{
 				ID:          rec.Article.ID,

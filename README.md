@@ -72,6 +72,6 @@
 - `postman.json`: Postman 的 API 集合檔案
 
 ## Setup
-`docker compose up -d`
+`docker compose -f 'docker-compose.yaml' up --build -d`
 port `9000`
 

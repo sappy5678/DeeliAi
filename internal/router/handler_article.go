@@ -11,6 +11,21 @@ import (
 	"github.com/sappy5678/DeeliAi/internal/domain/common"
 )
 
+// ArticleRecommendationResponse defines the structure for article data in recommendations, with snake_case JSON tags.
+type ArticleRecommendationResponse struct {
+	ID          uuid.UUID `json:"id"`
+	URL         string    `json:"url"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	ImageURL    string    `json:"image_url"`
+}
+
+// RecommendationArticleResponse defines the structure for a single recommended article, with snake_case JSON tags.
+type RecommendationArticleResponse struct {
+	Article       *ArticleRecommendationResponse `json:"article"`
+	AverageRating float64                        `json:"average_rating"`
+}
+
 func CreateArticle(app *app.Application) gin.HandlerFunc {
 	type Body struct {
 		URL string `json:"url" binding:"required,url"`
@@ -256,6 +271,22 @@ func GetRecommendations(app *app.Application) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"items": recommendations})
+		// Transform to snake_case response
+		var recommendationResponses []RecommendationArticleResponse
+		for _, rec := range recommendations {
+			articleResp := &ArticleRecommendationResponse{
+				ID:          rec.Article.ID,
+				URL:         rec.Article.URL,
+				Title:       rec.Article.Title,
+				Description: rec.Article.Description,
+				ImageURL:    rec.Article.ImageURL,
+			}
+			recommendationResponses = append(recommendationResponses, RecommendationArticleResponse{
+				Article:       articleResp,
+				AverageRating: rec.AverageRating,
+			})
+		}
+
+		c.JSON(http.StatusOK, gin.H{"articles": recommendationResponses})
 	}
 }

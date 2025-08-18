@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/sappy5678/DeeliAi/internal/app"
 	"github.com/sappy5678/DeeliAi/internal/domain/common"
-	"github.com/sappy5678/DeeliAi/internal/domain/user"
 )
 
 type signUpRequest struct {
@@ -17,8 +17,14 @@ type signUpRequest struct {
 }
 
 type signUpResponse struct {
-	User  *user.User `json:"user"`
-	Token string     `json:"token"`
+	User  *UserResponse `json:"user"`
+	Token string        `json:"token"`
+}
+
+type UserResponse struct {
+	ID       uuid.UUID `json:"id"`
+	Email    string    `json:"email"`
+	Username string    `json:"username"`
 }
 
 func SignUp(app *app.Application) gin.HandlerFunc {
@@ -35,11 +41,12 @@ func SignUp(app *app.Application) gin.HandlerFunc {
 			return
 		}
 
-		// Remove password hash from response
-		createdUser.PasswordHash = ""
-
 		respondWithJSON(c, http.StatusCreated, signUpResponse{
-			User:  createdUser,
+			User: &UserResponse{
+				ID:       createdUser.ID,
+				Email:    createdUser.Email,
+				Username: createdUser.Username,
+			},
 			Token: token,
 		})
 	}
@@ -51,8 +58,8 @@ type loginRequest struct {
 }
 
 type loginResponse struct {
-	User  *user.User `json:"user"`
-	Token string     `json:"token"`
+	User  *UserResponse `json:"user"`
+	Token string        `json:"token"`
 }
 
 func Login(app *app.Application) gin.HandlerFunc {
@@ -69,11 +76,12 @@ func Login(app *app.Application) gin.HandlerFunc {
 			return
 		}
 
-		// Remove password hash from response
-		foundUser.PasswordHash = ""
-
 		respondWithJSON(c, http.StatusOK, loginResponse{
-			User:  foundUser,
+			User: &UserResponse{
+				ID:       foundUser.ID,
+				Email:    foundUser.Email,
+				Username: foundUser.Username,
+			},
 			Token: token,
 		})
 	}
@@ -93,9 +101,10 @@ func GetCurrentUser(app *app.Application) gin.HandlerFunc {
 			return
 		}
 
-		// Remove password hash from response
-		foundUser.PasswordHash = ""
-
-		respondWithJSON(c, http.StatusOK, foundUser)
+		respondWithJSON(c, http.StatusOK, UserResponse{
+			ID:       foundUser.ID,
+			Email:    foundUser.Email,
+			Username: foundUser.Username,
+		})
 	}
 }

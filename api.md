@@ -1,5 +1,6 @@
 # DeeliAi API Documentation
 
+Dev endpoint `http://localhost:9000/api/v1`
 This document provides an overview and detailed specifications for the DeeliAi API. All API endpoints are prefixed with `/api/v1`.
 
 ## Authentication
@@ -214,7 +215,7 @@ Common error codes include:
     *   `200 OK`:
         ```json
         {
-          "items": [
+          "articles": [
             {
               "article": {
                 "id": "string" (uuid),

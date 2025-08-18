@@ -8,7 +8,6 @@ require (
 	github.com/Masterminds/squirrel v1.5.3
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/bxcodec/faker/v3 v3.8.0
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/requestid v0.0.5
 	github.com/gin-gonic/gin v1.8.1
@@ -16,7 +15,6 @@ require (
 	github.com/go-testfixtures/testfixtures/v3 v3.8.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
-	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jmoiron/sqlx v1.3.5
@@ -28,7 +26,6 @@ require (
 	golang.org/x/crypto v0.41.0
 	golang.org/x/net v0.42.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
-	gotest.tools v2.2.0+incompatible
 )
 
 require (
@@ -51,7 +48,6 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
